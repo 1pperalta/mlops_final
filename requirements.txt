@@ -1,11 +1,11 @@
 google-cloud-bigquery
 pandas
-db-dtypes 
-google-cloud-bigquery
-pandas
 db-dtypes
 matplotlib
 seaborn
 jupyter
 ipykernel
 pyarrow
+scikit-learn
+xgboost
+joblib
