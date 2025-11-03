@@ -5,11 +5,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-from xgboost import XGBClassifier
+import mlflow
+import mlflow.sklearn
 
 
 class ModelTrainer:
-    def __init__(self, input_path, model_dir, target_col='membresia_premium_Sí', test_size=0.2, random_state=42):
+    def __init__(self, input_path, model_dir, target_col='membresia_premium_Sí', test_size=0.25, random_state=42):
         self.input_path = input_path
         self.model_dir = Path(model_dir)
         self.target_col = target_col
@@ -24,6 +25,8 @@ class ModelTrainer:
         self.results = {}
         self.best_model_name = None
         self.best_model = None
+        
+        mlflow.set_experiment("restaurant_premium_prediction")
     
     def load_data(self):
         df = pd.read_parquet(self.input_path)
@@ -43,34 +46,38 @@ class ModelTrainer:
         self.models = {
             'LogisticRegression': LogisticRegression(max_iter=1000, random_state=self.random_state),
             'RandomForest': RandomForestClassifier(n_estimators=100, random_state=self.random_state, n_jobs=-1),
-            'GradientBoosting': GradientBoostingClassifier(n_estimators=100, random_state=self.random_state),
-            'XGBoost': XGBClassifier(n_estimators=100, random_state=self.random_state, eval_metric='logloss')
+            'GradientBoosting': GradientBoostingClassifier(n_estimators=100, random_state=self.random_state)
         }
         print(f"Initialized {len(self.models)} models")
         return self
     
     def train_models(self):
         for name, model in self.models.items():
-            print(f"\nTraining {name}...")
-            model.fit(self.X_train, self.y_train)
-            
-            y_pred = model.predict(self.X_test)
-            y_proba = model.predict_proba(self.X_test)[:, 1]
-            
-            self.results[name] = {
-                'accuracy': accuracy_score(self.y_test, y_pred),
-                'f1_score': f1_score(self.y_test, y_pred),
-                'roc_auc': roc_auc_score(self.y_test, y_proba),
-                'recall': recall_score(self.y_test, y_pred),
-                'precision': precision_score(self.y_test, y_pred),
-                'model': model
-            }
-            
-            print(f"{name} - Accuracy: {self.results[name]['accuracy']:.4f}, "
-                  f"F1: {self.results[name]['f1_score']:.4f}, "
-                  f"ROC-AUC: {self.results[name]['roc_auc']:.4f}, "
-                  f"Recall: {self.results[name]['recall']:.4f}, "
-                  f"Precision: {self.results[name]['precision']:.4f}")
+            with mlflow.start_run(run_name=name):
+                print(f"\nTraining {name}...")
+                model.fit(self.X_train, self.y_train)
+                
+                y_pred = model.predict(self.X_test)
+                y_proba = model.predict_proba(self.X_test)[:, 1]
+                
+                metrics = {
+                    'accuracy': accuracy_score(self.y_test, y_pred),
+                    'precision': precision_score(self.y_test, y_pred),
+                    'recall': recall_score(self.y_test, y_pred),
+                    'f1_score': f1_score(self.y_test, y_pred),
+                    'roc_auc': roc_auc_score(self.y_test, y_proba)
+                }
+                
+                mlflow.log_params(model.get_params())
+                mlflow.log_metrics(metrics)
+                mlflow.sklearn.log_model(model, f"model_{name}")
+                
+                self.results[name] = {**metrics, 'model': model}
+                
+                print(f"{name} - Accuracy: {metrics['accuracy']:.4f}, "
+                      f"Recall: {metrics['recall']:.4f}, "
+                      f"F1: {metrics['f1_score']:.4f}, "
+                      f"ROC-AUC: {metrics['roc_auc']:.4f}")
         
         return self
     
@@ -91,10 +98,6 @@ class ModelTrainer:
         
         joblib.dump(self.best_model, model_path)
         print(f"Saved best model to {model_path}")
-        
-        results_path = self.model_dir / 'training_results.pkl'
-        joblib.dump(self.results, results_path)
-        print(f"Saved results to {results_path}")
         
         return self
     
