@@ -3,7 +3,7 @@ pipeline {
     
     environment {
         VENV_DIR = '.venv'
-        RECIPIENT_EMAIL = 'soypepe2005@example.com'
+        RECIPIENT_EMAIL = 'padavidperalta@gmail.com'
         PATH = "/usr/local/bin:/opt/homebrew/bin:${env.PATH}"
     }
     
