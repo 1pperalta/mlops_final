@@ -31,12 +31,15 @@ pipeline {
             steps {
                 echo 'Validating project structure...'
                 sh '''
-                    test -d data && echo "✓ data folder exists" || exit 1
+                    # Validate source files exist (from repo)
                     test -d src && echo "✓ src folder exists" || exit 1
-                    test -d models && echo "✓ models folder exists" || exit 1
                     test -f master.py && echo "✓ master.py exists" || exit 1
                     test -f requirements.txt && echo "✓ requirements.txt exists" || exit 1
                     test -f dockerfile && echo "✓ dockerfile exists" || exit 1
+                    
+                    # Create data and models directories (they'll be populated by pipeline)
+                    mkdir -p data/raw data/processed models
+                    echo "✓ Created data and models directories"
                 '''
             }
         }

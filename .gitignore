@@ -1,26 +1,39 @@
-
+# Virtual environments
 .venv/
 venv/
 myenv/
 env/
+
+# Data files
 data/raw/*.csv
+data/raw/*.parquet
 data/processed/*.csv
+data/processed/*.parquet
+
+# Models
 models/*.pkl
 models/*.joblib
+models/evaluation/evaluation_results.pkl
+
+# Credentials
 *credentials*.json
 *.key
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
+
+# Jupyter
 .ipynb_checkpoints/
+
+# IDE
 .vscode/
 .idea/
+
+# OS
 .DS_Store
-.parquet
-*parquet
-.pkl
-*pkl
+
+# MLflow
 mlruns/
 mlartifacts/
-.gitignore
-*gitignore
