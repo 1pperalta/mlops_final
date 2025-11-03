@@ -1,0 +1,137 @@
+pipeline {
+    agent any
+    
+    environment {
+        VENV_DIR = '.venv'
+        RECIPIENT_EMAIL = 'soypepe2005@example.com'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Repository already checked out by Jenkins'
+                sh 'git branch'
+                sh 'git log -1'
+            }
+        }
+        
+        stage('Setup Environment') {
+            steps {
+                echo 'Setting up Python virtual environment...'
+                sh '''
+                    python3 -m venv ${VENV_DIR}
+                    . ${VENV_DIR}/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
+            }
+        }
+        
+        stage('Validate Structure') {
+            steps {
+                echo 'Validating project structure...'
+                sh '''
+                    test -d data && echo "✓ data folder exists" || exit 1
+                    test -d src && echo "✓ src folder exists" || exit 1
+                    test -d models && echo "✓ models folder exists" || exit 1
+                    test -f master.py && echo "✓ master.py exists" || exit 1
+                    test -f requirements.txt && echo "✓ requirements.txt exists" || exit 1
+                    test -f dockerfile && echo "✓ dockerfile exists" || exit 1
+                '''
+            }
+        }
+        
+        stage('Run Pipeline') {
+            steps {
+                echo 'Running ML pipeline...'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    python master.py
+                '''
+            }
+        }
+        
+        stage('Validate Outputs') {
+            steps {
+                echo 'Validating pipeline outputs...'
+                sh '''
+                    test -f data/raw/restaurante.parquet && echo "✓ Raw data exists" || exit 1
+                    test -f data/processed/restaurante_clean.parquet && echo "✓ Processed data exists" || exit 1
+                    test -f models/best_model_GradientBoosting.pkl && echo "✓ Model saved" || exit 1
+                    echo "✓ All outputs validated"
+                '''
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                sh 'docker build -t restaurant-ml-api .'
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo '========================================='
+            echo 'Pipeline completed successfully!'
+            echo '========================================='
+            
+            emailext (
+                subject: "SUCCESS: Jenkins Pipeline - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    <h2>Pipeline Execution Successful!</h2>
+                    <p><strong>Project:</strong> ${env.JOB_NAME}</p>
+                    <p><strong>Build Number:</strong> ${env.BUILD_NUMBER}</p>
+                    <p><strong>Status:</strong> <span style="color: green;">SUCCESS</span></p>
+                    <p><strong>Duration:</strong> ${currentBuild.durationString}</p>
+                    
+                    <h3>Stages Completed:</h3>
+                    <ul>
+                        <li>✓ Checkout</li>
+                        <li>✓ Setup Environment</li>
+                        <li>✓ Validate Structure</li>
+                        <li>✓ Run ML Pipeline</li>
+                        <li>✓ Validate Outputs</li>
+                        <li>✓ Build Docker Image</li>
+                    </ul>
+                    
+                    <p><strong>Model:</strong> GradientBoosting saved successfully</p>
+                    <p><strong>Docker Image:</strong> restaurant-ml-api built</p>
+                    
+                    <p>View full logs: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                """,
+                to: "${RECIPIENT_EMAIL}",
+                mimeType: 'text/html'
+            )
+        }
+        
+        failure {
+            echo '========================================='
+            echo 'Pipeline failed. Check logs for details.'
+            echo '========================================='
+            
+            emailext (
+                subject: "FAILED: Jenkins Pipeline - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    <h2 style="color: red;">Pipeline Execution Failed!</h2>
+                    <p><strong>Project:</strong> ${env.JOB_NAME}</p>
+                    <p><strong>Build Number:</strong> ${env.BUILD_NUMBER}</p>
+                    <p><strong>Status:</strong> <span style="color: red;">FAILED</span></p>
+                    <p><strong>Duration:</strong> ${currentBuild.durationString}</p>
+                    
+                    <p><strong>Action Required:</strong> Check the logs for error details.</p>
+                    
+                    <p>View full logs: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                """,
+                to: "${RECIPIENT_EMAIL}",
+                mimeType: 'text/html'
+            )
+        }
+        
+        always {
+            echo 'Cleaning up...'
+            sh 'rm -rf ${VENV_DIR}'
+        }
+    }
+}
