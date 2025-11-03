@@ -4,7 +4,7 @@ import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 from xgboost import XGBClassifier
 
 
@@ -61,12 +61,16 @@ class ModelTrainer:
                 'accuracy': accuracy_score(self.y_test, y_pred),
                 'f1_score': f1_score(self.y_test, y_pred),
                 'roc_auc': roc_auc_score(self.y_test, y_proba),
+                'recall': recall_score(self.y_test, y_pred),
+                'precision': precision_score(self.y_test, y_pred),
                 'model': model
             }
             
             print(f"{name} - Accuracy: {self.results[name]['accuracy']:.4f}, "
                   f"F1: {self.results[name]['f1_score']:.4f}, "
-                  f"ROC-AUC: {self.results[name]['roc_auc']:.4f}")
+                  f"ROC-AUC: {self.results[name]['roc_auc']:.4f}, "
+                  f"Recall: {self.results[name]['recall']:.4f}, "
+                  f"Precision: {self.results[name]['precision']:.4f}")
         
         return self
     
