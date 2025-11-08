@@ -8,7 +8,7 @@ This project implements a complete machine learning pipeline to predict which re
 
 **Target Variable:** Premium Membership (Binary Classification)  
 **Optimization Metric:** Recall (to maximize customer capture for marketing campaigns)  
-**Best Model:** Gradient Boosting (Recall: 0.95)
+**Best Model:** Gradient Boosting (Recall: 0.89)
 
 ## Project Structure
 
@@ -16,7 +16,7 @@ This project implements a complete machine learning pipeline to predict which re
 mlops_final/
 │
 ├── data/
-│   ├── raw/                    # Original data from BigQuery (30,000 records)
+│   ├── raw/                    # Original data from BigQuery 
 │   └── processed/              # Cleaned and encoded data
 │
 ├── notebooks/
@@ -168,11 +168,11 @@ Three classification models were trained and compared using MLflow:
 ![MLflow Model Comparison](images/recall.png)
 
 **Best Model: Gradient Boosting**
-- **Recall:** 0.95 (selected as best)
-- **Accuracy:** 0.96
-- **Precision:** 0.97
-- **F1-Score:** 0.96
-- **ROC-AUC:** 0.99
+- **Recall:** 0.899(selected as best)
+- **Accuracy:** 0.85
+- **Precision:** 0.78
+- **F1-Score:** 0.83
+- **ROC-AUC:** 0.90
 
 All metrics tracked and visualized in MLflow for reproducibility and comparison.
 
